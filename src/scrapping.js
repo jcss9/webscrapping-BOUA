@@ -1,10 +1,12 @@
+const fs = require('fs');
 var request = require('request-promise');
 const cheerio = require('cheerio');
 const cldrSegmentation = require("cldr-segmentation");
+const { create } = require('domain');
 
-let url = "https://www.boua.ua.es/ca/acuerdo/24221";
+//let url = "https://www.boua.ua.es/ca/acuerdo/24221";
 
-async function init() {
+async function extraerFrases(url, id, tipo) {
     const $ = await request({
         uri: url,
         transform: body => cheerio.load(body)
@@ -19,25 +21,41 @@ async function init() {
                                            .replace(/[-()/]/g, '') // Eliminar guiones, paréntesis y barras
                                            .replace(/(\.\.)/g,' ') // Eliminar dobles puntos
                                            .replace(/ +(?= )/g,'') // Eliminar dobles espacios
-    console.log(texto_prueba);                       
-    segmentar_en_frases(texto_prueba)
+    //console.log(texto_prueba);                       
+    segmentar_en_frases(texto_prueba,id,tipo)
 }
 
-function segmentar_en_frases(texto_prueba) {
+function segmentar_en_frases(texto_prueba,id,tipo) {
     var supp = cldrSegmentation.suppressions.es; // Utilizamos el Español
     var texto_segmentado = cldrSegmentation.sentenceSplit(texto_prueba,supp);
     for (let i=0; i<texto_segmentado.length; i++) { // Para cada frase...
         // Imprimimos las frases utilizando regEx
-        console.log(i + ": " + texto_segmentado[i].replace(/\.[^.]*$/,''))  // Eliminar contenido después de un punto
+        //console.log(i + ": " + texto_segmentado[i].replace(/\.[^.]*$/,''))  // Eliminar contenido después de un punto
                                                   
     }
-    console.log("frases: " + texto_segmentado.length); // Cantidad de frases
+    console.log("\n---------------------\nfrases: " + texto_segmentado.length); // Cantidad de frases
+    console.log(texto_segmentado)
+
+    createFile(texto_segmentado,id,tipo)
+    
 }
 
-
-function cargarAcuerdos() {
-    fetch ('')
+function createFile(data,id,tipo) {
+    var filename = id + '.' + tipo;
+    fs.open(filename,'r',function(err, fd){
+        if (err) {
+            fs.writeFile(filename, JSON.stringify(data),'utf8', (err) => { 
+                console.log('Se ha guardado el fichero ' + filename); 
+            });
+        } 
+    });
 }
 
+let rawdata = fs.readFileSync('acuerdos.json');
+let student = JSON.parse(rawdata);
 
-init();
+for (let i=0; i<student.length; i++) {
+    extraerFrases(student[i].enlaceCA, student[i].id, "ca")
+    extraerFrases(student[i].enlaceES, student[i].id, "es")
+    // Ahora habría que crear un archivo para cada enlace. acuerdo2244.es, acuerdo2244.ca
+}

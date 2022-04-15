@@ -1,7 +1,7 @@
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const fs = require('fs');
 
-const numAcuerdos = 10;
+const numAcuerdos = process.argv[2];
 
 const body = {
     "pag":1, 
@@ -16,17 +16,21 @@ const body = {
     "centro":-1,
     "publicados":true
 }
+
 async function init() {
     const response = await fetch('https://www.boua.ua.es/Acuerdos/buscarAcuerdos', { 
         method: 'POST',
         body: JSON.stringify(body),
         headers: {'Content-Type': 'application/json'}
     });
+
     const data = await response.json();
     let acuerdos = [];
     
     for (let i=0; i<data.acuerdos.length; i++) {
-        console.log("https://www.boua.ua.es/ca/acuerdo/" + data.acuerdos[i].ID);
+        console.log("https://www.boua.ua.es/ca/acuerdo/" + data.acuerdos[i].ID
+                   +"\nhttps://www.boua.ua.es/es/acuerdo/" + data.acuerdos[i].ID + "\n");
+
         var acuerdo = {
             "id" : data.acuerdos[i].ID,
             "enlaceCA" : "https://www.boua.ua.es/ca/acuerdo/" + data.acuerdos[i].ID,
@@ -37,7 +41,7 @@ async function init() {
      
     fs.writeFile('acuerdos.json', JSON.stringify(acuerdos),'utf8', (err) => { 
       if (err) throw err; 
-      console.log('\nSe ha guardado el fichero JSON con ' + numAcuerdos + ' enlaces y sus identificadores.'); 
+      console.log('Se ha guardado el fichero JSON con ' + numAcuerdos*2 + ' enlaces y sus identificadores.'); 
     });
 }
 

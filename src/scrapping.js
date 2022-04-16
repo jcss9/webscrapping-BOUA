@@ -1,12 +1,49 @@
 const fs = require('fs');
+const path = require('path');
 var request = require('request-promise');
 const cheerio = require('cheerio');
 const cldrSegmentation = require("cldr-segmentation");
 const { create } = require('domain');
+const arrayToTxtFile = require('array-to-txt-file')
 
-//let url = "https://www.boua.ua.es/ca/acuerdo/24221";
+const valenciano = "ca";
+const español = "es";
 
-async function extraerFrases(url, id, tipo) {
+let rawdata = fs.readFileSync('acuerdos.json');
+let acuerdo = JSON.parse(rawdata);
+
+async function main () {
+    for (let i=0; i<acuerdo.length; i++) {
+        
+        var frasesEspañol = await extraerFrases(acuerdo[i].enlaceES)
+        var frasesValenciano = await extraerFrases(acuerdo[i].enlaceCA)
+
+        var numFrasesES = frasesEspañol.length
+        var numFrasesVA = frasesValenciano.length
+        console.log("Frases español: " + numFrasesES);
+        console.log("Frases valenciano: "+ numFrasesVA);
+        console.log("----------------------------------------")
+        
+        if(numFrasesES == numFrasesVA) {
+            fs.mkdir(path.join(__dirname, '' + acuerdo[i].id), (err) => {
+                console.log('Directorio: ' + acuerdo[i].id);
+            });
+            crearFichero(frasesEspañol, acuerdo[i].id, español)
+            crearFichero(frasesValenciano, acuerdo[i].id, valenciano)
+        }
+    }
+}
+    
+    
+async function crearFichero(frases_parseadas, id, tipo){
+    var filename = id + '.' + tipo; // 23442.ca o 23442.es
+    await arrayToTxtFile(frases_parseadas, id + '/' + filename, err => {
+        if(err) console.error(err)
+        //console.log('Se ha guardado el fichero ' + filename); 
+    })
+}
+
+async function extraerFrases(url) {
     const $ = await request({
         uri: url,
         transform: body => cheerio.load(body)
@@ -15,47 +52,25 @@ async function extraerFrases(url, id, tipo) {
     // Esta función coge todos los <div class="parrafos_fila"> de <div class="parrafos_tabla"> después de lo 
     // de Titulo, Sección, Órgano, Fecha de aprobación. 
     const parrafos_fila = $('.parrafos_fila').next(); 
-    var texto_prueba = parrafos_fila.text().replace(/[\n]/g,'.') // Cambiar saltos de líneas por "."
-                                           .replace(/\d+[.]?(\s|)/g, '') // Eliminar enumeraciones. (pero se borran todos los num)
-                                           .replace(/#[a-zA-ZÀ-ÿ\u00f1\u00d1]+\s*/g, '') // Eliminar hastags
-                                           .replace(/[-()/]/g, '') // Eliminar guiones, paréntesis y barras
-                                           .replace(/(\.\.)/g,' ') // Eliminar dobles puntos
-                                           .replace(/ +(?= )/g,'') // Eliminar dobles espacios
-    //console.log(texto_prueba);                       
-    segmentar_en_frases(texto_prueba,id,tipo)
-}
-
-function segmentar_en_frases(texto_prueba,id,tipo) {
+     var texto_prueba = parrafos_fila.text().replace(/[\n]/g,'.') // Cambiar saltos de líneas por "."
+    //                                        .replace(/\d+[.]?(\s|)/g, '') // Eliminar enumeraciones. (pero se borran todos los num)
+    //                                        .replace(/#[a-zA-ZÀ-ÿ\u00f1\u00d1]+\s*/g, '') // Eliminar hastags
+                                            .replace(/[-()/"]/g, '') // Eliminar guiones, paréntesis y barras
+                                            .replace(/ +(?= )/g,'') // Eliminar dobles espacios
+                                            .replace(/(\.\.)/g,'') // Eliminar dobles puntos
+                                                      
     var supp = cldrSegmentation.suppressions.es; // Utilizamos el Español
     var texto_segmentado = cldrSegmentation.sentenceSplit(texto_prueba,supp);
-    for (let i=0; i<texto_segmentado.length; i++) { // Para cada frase...
-        // Imprimimos las frases utilizando regEx
-        //console.log(i + ": " + texto_segmentado[i].replace(/\.[^.]*$/,''))  // Eliminar contenido después de un punto
-                                                  
+    var frases_parseadas = [];
+    for(let i = 0; i<texto_segmentado.length; i++) {
+        texto_segmentado[i] = texto_segmentado[i].replace(/\.[^.]*/g,'').replace(/\:[^.]*/g,'');
+        if(texto_segmentado[i] != "" && texto_segmentado[i].length > 2) {
+            frases_parseadas.push(texto_segmentado[i]);
+        }
     }
-    console.log("\n---------------------\nfrases: " + texto_segmentado.length); // Cantidad de frases
-    console.log(texto_segmentado)
+    //console.log("\n---------------------\nfrases: " + frases_parseadas.length); // Cantidad de frases
 
-    createFile(texto_segmentado,id,tipo)
-    
+    return frases_parseadas
 }
 
-function createFile(data,id,tipo) {
-    var filename = id + '.' + tipo;
-    fs.open(filename,'r',function(err, fd){
-        if (err) {
-            fs.writeFile(filename, JSON.stringify(data),'utf8', (err) => { 
-                console.log('Se ha guardado el fichero ' + filename); 
-            });
-        } 
-    });
-}
-
-let rawdata = fs.readFileSync('acuerdos.json');
-let student = JSON.parse(rawdata);
-
-for (let i=0; i<student.length; i++) {
-    extraerFrases(student[i].enlaceCA, student[i].id, "ca")
-    extraerFrases(student[i].enlaceES, student[i].id, "es")
-    // Ahora habría que crear un archivo para cada enlace. acuerdo2244.es, acuerdo2244.ca
-}
+main()

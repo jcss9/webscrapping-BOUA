@@ -14,6 +14,8 @@ let acuerdo = JSON.parse(rawdata);
 
 async function main () {
     for (let i=0; i<acuerdo.length; i++) {
+
+        var id = acuerdo[i].id;
         
         var frasesEspañol = await extraerFrases(acuerdo[i].enlaceES)
         var frasesValenciano = await extraerFrases(acuerdo[i].enlaceCA)
@@ -25,11 +27,11 @@ async function main () {
         console.log("----------------------------------------")
         
         if(numFrasesES == numFrasesVA) {
-            fs.mkdir(path.join(__dirname, '' + acuerdo[i].id), (err) => {
-                console.log('Directorio: ' + acuerdo[i].id);
+            fs.mkdir(path.join(__dirname, '' + id), (err) => {
+                console.log('Directorio: ' + id);
             });
-            crearFichero(frasesEspañol, acuerdo[i].id, español)
-            crearFichero(frasesValenciano, acuerdo[i].id, valenciano)
+            crearFichero(frasesEspañol, id, español)
+            crearFichero(frasesValenciano, id, valenciano)
         }
     }
 }
@@ -37,7 +39,7 @@ async function main () {
     
 async function crearFichero(frases_parseadas, id, tipo){
     var filename = id + '.' + tipo; // 23442.ca o 23442.es
-    await arrayToTxtFile(frases_parseadas, id + '/' + filename, err => {
+    arrayToTxtFile(frases_parseadas, id + '/' + filename, err => {
         if(err) console.error(err)
         //console.log('Se ha guardado el fichero ' + filename); 
     })

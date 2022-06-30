@@ -41,7 +41,7 @@ async function init() {
      
     fs.writeFile('acuerdos.json', JSON.stringify(acuerdos),'utf8', (err) => { 
       if (err) throw err; 
-      console.log('Se ha guardado el fichero JSON con ' + numAcuerdos*2 + ' enlaces y sus identificadores.'); 
+      console.log('Se ha guardado el fichero JSON con ' + data.acuerdos.length + ' enlaces y sus identificadores.'); 
     });
 }
 

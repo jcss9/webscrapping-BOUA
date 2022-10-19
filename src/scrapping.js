@@ -7,26 +7,40 @@ const arrayToTxtFile = require('array-to-txt-file')
 let rawdata = fs.readFileSync('acuerdos.json');
 let acuerdo = JSON.parse(rawdata);
 
-var frases_parseadasES = [];
-var frases_parseadasCA = [];
 var texto_segmentadoES = [];
+var frases_parseadasES = [];
 var texto_segmentadoCA = [];
+var frases_parseadasCA = [];
 
 async function main () {
+
+    fs.writeFile('train.lc.norm.tok.es', '', function(){console.log('Nuevo fichero')})
+    fs.writeFile('train.lc.norm.tok.va', '', function(){console.log('Nuevo fichero')})
     for (let i=0; i<acuerdo.length; i++) {
         await extraerFrases(acuerdo[i].enlaceES, acuerdo[i].enlaceCA)
         console.log(i, acuerdo[i].enlaceES)
     }
 }
 
-async function crearFicheros(){
-    arrayToTxtFile(frases_parseadasES, "train.lc.norm.tok.es", err => {
-        if(err) console.error(err)
-    })
+function appendFrases(frases_parseadasES, frases_parseadasCA) {
 
-    arrayToTxtFile(frases_parseadasCA, "train.lc.norm.tok.va", err => {
-        if(err) console.error(err)
-    })
+    for(let i = 0; i < frases_parseadasES.length; i++ ) {
+        let stringArray = frases_parseadasES[i];
+        let finalString  = stringArray.join('\r\n').trim() + '\n';
+        if (!finalString == '') {
+            fs.appendFileSync('train.lc.norm.tok.es', finalString);
+        }
+        finalString = '';
+    }
+
+    for(let i = 0; i < frases_parseadasCA.length; i++ ) {
+        let stringArray = frases_parseadasCA[i];
+        let finalString  = stringArray.join('\r\n').trim() + '\n';
+        if (!finalString == '') {
+            fs.appendFileSync('train.lc.norm.tok.va', finalString);
+        }
+        finalString = '';
+    }
 }
 
 
@@ -46,22 +60,22 @@ async function extraerFrases(urlES, urlCA) {
     // Esta función coge todos los <div class="parrafos_fila"> de <div class="parrafos_tabla"> después de lo 
     // de Titulo, Sección, Órgano, Fecha de aprobación. 
     $es('.parrafos_fila').each((i, el) => {
-        var textoES = $es(el).next().text().replace(/[\n]/g,'') // Cambiar saltos de línea por "."
-                                           .replace(/[-()/"]/g, '') // Eliminar guiones, paréntesis y barras
-                                           .replace(/ +(?= )/g,'') // Eliminar dobles espacios
-                                           .replace(/(\.\.)/g,'') // Eliminar dobles puntos
-                                           .replace(/\:[^.]*/g,'')
-
+        var textoES = $es(el).next().text().replace(/[\n]/g,'') // Cambiar saltos de línea por ""
+                                            .replace(/[·]/g,'')
+                                            .replace(/[-()/"]/g, '') // Eliminar guiones, paréntesis y barras
+                                            .replace(/ +(?= )/g,'') // Eliminar dobles espacios
+                                            .replace(/(\.\.)/g,'') // Eliminar dobles puntos
+                                            .replace(/\:[^.]*/g,'')
         texto_segmentadoES.push(cldrSegmentation.sentenceSplit(textoES, supp))
     })
         
     $cat('.parrafos_fila').each((i, el) => {
         var textoCA = $cat(el).next().text().replace(/[\n]/g,'') // Cambiar saltos de línea por "."
+                                            .replace(/[·]/g,'')
                                             .replace(/[-()/"]/g, '') // Eliminar guiones, paréntesis y barras
                                             .replace(/ +(?= )/g,'') // Eliminar dobles espacios
                                             .replace(/(\.\.)/g,'') // Eliminar dobles puntos
                                             .replace(/\:[^.]*/g,'')
-        
         texto_segmentadoCA.push(cldrSegmentation.sentenceSplit(textoCA, supp));
     })
 
@@ -69,13 +83,21 @@ async function extraerFrases(urlES, urlCA) {
     if (texto_segmentadoES.length == texto_segmentadoCA.length) {
         let divsLength = texto_segmentadoES.length
         for (let i=0; i<divsLength; i++) {
-            if (texto_segmentadoES[i].length == texto_segmentadoCA[i].length) {
+            //Si tiene los mismos divs y además tiene la misma cantidad de frase por div, entra. 
+            if (texto_segmentadoES[i].length === texto_segmentadoCA[i].length) {
                 frases_parseadasES.push(texto_segmentadoES[i])
                 frases_parseadasCA.push(texto_segmentadoCA[i])
             }
         }
     }
-    await crearFicheros()
+
+    appendFrases(frases_parseadasES, frases_parseadasCA)
+
+    texto_segmentadoES = [];
+    texto_segmentadoCA = [];
+    frases_parseadasES = [];
+    frases_parseadasCA = [];
+
 }
 
 main()

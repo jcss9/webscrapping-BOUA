@@ -45,15 +45,19 @@ function appendFrases(frases_parseadasES, frases_parseadasCA) {
 
 
 async function extraerFrases(urlES, urlCA) {
-    const $es = await request({
-        uri: urlES,
-        transform: body => cheerio.load(body)
-    });
 
-    const $cat = await request({
-        uri: urlCA,
-        transform: body => cheerio.load(body)
-    });
+    try {
+        const $es = await request({
+            uri: urlES,
+            transform: body => cheerio.load(body)
+        });
+    
+        const $cat = await request({
+            uri: urlCA,
+            transform: body => cheerio.load(body)
+        });
+    
+
 
     var supp = cldrSegmentation.suppressions.es; // Utilizamos el Español
 
@@ -97,6 +101,9 @@ async function extraerFrases(urlES, urlCA) {
     texto_segmentadoCA = [];
     frases_parseadasES = [];
     frases_parseadasCA = [];
+} catch (e) {
+    console.log("falló este acuerdo")
+}
 
 }
 

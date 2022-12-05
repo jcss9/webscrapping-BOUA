@@ -33,7 +33,7 @@ async function init() {
 
         var acuerdo = {
             "id" : data.acuerdos[i].ID,
-            "enlaceCA" : "https://www.boua.ua.es/ca/acuerdo/" + data.acuerdos[i].ID,
+            "enlaceVA" : "https://www.boua.ua.es/ca/acuerdo/" + data.acuerdos[i].ID,
             "enlaceES" : "https://www.boua.ua.es/es/acuerdo/" + data.acuerdos[i].ID
         }
         acuerdos.push(acuerdo);

@@ -10,7 +10,7 @@ npm install
 ```
 node index.js --num_acuerdos 
 ```
-3. Una vez obtenido el JSON mediante el comando anterior, el cuál se guardará en la carpeta raíz de la aplicación, ejecutamos el siguiente comando para obtener las frases de los acuerdos. Situarnos en la carpeta _src_ del proyecto.
+3. Una vez obtenido el JSON mediante el comando anterior, ejecutamos el siguiente comando para obtener las frases de los acuerdos. Situarnos en la carpeta _src_ del proyecto.
 ```
 node scrapping.js
 ```
